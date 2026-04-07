@@ -1,0 +1,108 @@
+#!/bin/bash
+# =============================================================================
+# quarto-manager - CLI tool for managing Quarto on Linux
+# =============================================================================
+#
+# Description:
+#   Main entry point for the quarto-manager CLI. Parses the subcommand and
+#   dispatches to the corresponding module (install, update, check, remove).
+#   Sources all library scripts from ../lib/ relative to this file's location.
+#
+# Usage:
+#   quarto-manager install [VERSION]   Install Quarto
+#   quarto-manager update  [VERSION]   Update Quarto to a new version
+#   quarto-manager check               Check Quarto installation status
+#   quarto-manager remove              Remove Quarto
+#   quarto-manager help                Show this help message
+#   quarto-manager --version           Show version number
+#
+# Dependencies:
+#   - curl, sudo, gdebi-core (for install/update operations)
+#   - Linux (Debian/Ubuntu) with dpkg
+# =============================================================================
+
+set -euo pipefail
+
+# ──────────────────────────────────────────────
+# Resolve script location and source libraries
+# ──────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# shellcheck source=../lib/utils.sh
+source "${LIB_DIR}/utils.sh"
+# shellcheck source=../lib/install.sh
+source "${LIB_DIR}/install.sh"
+# shellcheck source=../lib/update.sh
+source "${LIB_DIR}/update.sh"
+# shellcheck source=../lib/check.sh
+source "${LIB_DIR}/check.sh"
+# shellcheck source=../lib/remove.sh
+source "${LIB_DIR}/remove.sh"
+
+# ──────────────────────────────────────────────
+# Version
+# ──────────────────────────────────────────────
+readonly VERSION="0.1.0"
+
+# ──────────────────────────────────────────────
+# Help
+# ──────────────────────────────────────────────
+show_help() {
+    cat <<EOF
+${BOLD}quarto-manager${RESET} v${VERSION} - Manage Quarto installations on Linux
+
+${BOLD}USAGE:${RESET}
+    quarto-manager <command> [options]
+
+${BOLD}COMMANDS:${RESET}
+    install [VERSION]   Install Quarto (prompts for version if omitted)
+    update  [VERSION]   Update Quarto to a new version
+    check               Show Quarto installation status and run diagnostics
+    remove              Remove Quarto
+    help                Show this help message
+
+${BOLD}EXAMPLES:${RESET}
+    quarto-manager install 1.7.32
+    quarto-manager update
+    quarto-manager check
+    quarto-manager remove
+EOF
+}
+
+# ──────────────────────────────────────────────
+# Main
+# ──────────────────────────────────────────────
+main() {
+    local command="${1:-help}"
+    shift || true
+
+    case "$command" in
+        install)
+            run_install "$@"
+            ;;
+        update)
+            run_update "$@"
+            ;;
+        check)
+            run_check "$@"
+            ;;
+        remove)
+            run_remove "$@"
+            ;;
+        help | --help | -h)
+            show_help
+            ;;
+        --version | -v)
+            echo "quarto-manager v${VERSION}"
+            ;;
+        *)
+            error "Unknown command: ${command}"
+            echo ""
+            show_help
+            return 1
+            ;;
+    esac
+}
+
+main "$@"

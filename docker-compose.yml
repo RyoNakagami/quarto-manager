@@ -1,0 +1,25 @@
+# =============================================================================
+# docker-compose.yml - Test runner for quarto-manager
+# =============================================================================
+#
+# Description:
+#   Defines a test service that builds the Dockerfile and runs bats tests.
+#   Source directories (bin, lib, tests) are bind-mounted as read-only
+#   so code changes are picked up without rebuilding the image.
+#
+# Usage:
+#   docker compose build test          # Build the test image (first time / Dockerfile changes)
+#   docker compose run --rm test       # Run all tests
+#   docker compose down --rmi all      # Remove containers and images
+# =============================================================================
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["bats", "--recursive", "tests/"]
+    volumes:
+      - ./bin:/app/bin:ro
+      - ./lib:/app/lib:ro
+      - ./tests:/app/tests:ro
