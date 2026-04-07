@@ -1,0 +1,13 @@
+meta-data:
+  repository_name: quarto-manager
+  visibility: public
+  org-name: RyoNakagami
+  tag:
+    - quarto
+    - linux
+    - command-line-tool
+    - cli-tool
+  description: |
+    A command-line tool to manage Quarto versions.
+  homepage: null
+  license: mit
