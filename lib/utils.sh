@@ -126,7 +126,8 @@ download_deb() {
     url=$(get_deb_url "$version")
     filename=$(get_deb_filename "$version")
 
-    info "Downloading Quarto v${version}..."
+    # Log to stderr: stdout is captured by the caller as the file path
+    info "Downloading Quarto v${version}..." >&2
     if ! curl -fSL -o "$filename" "$url"; then
         error "Download failed. Check the version number and your network connection."
         rm -f "$filename"

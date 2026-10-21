@@ -67,6 +67,17 @@ setup() {
 }
 
 # ──────────────────────────────────────────────
+# download_deb
+# ──────────────────────────────────────────────
+@test "download_deb prints only the file path to stdout" {
+    curl() { :; }
+    cd "$BATS_TEST_TMPDIR"
+    local deb_file
+    deb_file=$(download_deb "1.7.32" 2>/dev/null)
+    [ "$deb_file" = "quarto-1.7.32-linux-amd64.deb" ]
+}
+
+# ──────────────────────────────────────────────
 # check_dependencies
 # ──────────────────────────────────────────────
 @test "check_dependencies succeeds when all deps present" {
