@@ -47,7 +47,7 @@ source "${LIB_DIR}/remove.sh"
 # ──────────────────────────────────────────────
 # Version
 # ──────────────────────────────────────────────
-readonly VERSION="0.1.0"
+readonly VERSION="0.1.1"
 
 # Set to 1 by --verbose; read by debug() in utils.sh
 VERBOSE=0
