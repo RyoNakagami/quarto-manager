@@ -5,7 +5,8 @@
 #
 # Description:
 #   Install Quarto on a Linux system. Downloads the specified version's .deb
-#   package from GitHub Releases and installs it via gdebi.
+#   package from GitHub Releases into a temporary directory (mktemp) and
+#   installs it via gdebi. The temporary directory is always removed.
 #
 # Functions:
 #   - install_quarto <VERSION>   : Install the specified version (internal)
@@ -38,17 +39,23 @@ install_quarto() {
 
     info "Installing Quarto v${version}..."
 
+    local tmp_dir
+    tmp_dir=$(make_download_dir) || return 1
+    # Safety net: remove the temp dir even on interrupt or unexpected exit
+    # shellcheck disable=SC2064
+    trap "cleanup_download_dir $(printf '%q' "$tmp_dir")" EXIT
+
     local deb_file
-    deb_file=$(download_deb "$version") || return 1
+    deb_file=$(download_deb "$version" "$tmp_dir") || return 1
 
     info "Running installer..."
     if ! sudo gdebi --non-interactive "$deb_file"; then
         error "Installation failed."
-        rm -f "$deb_file"
+        cleanup_download_dir "$tmp_dir"
         return 1
     fi
 
-    rm -f "$deb_file"
+    cleanup_download_dir "$tmp_dir"
     info "Temporary files cleaned up."
 
     if is_quarto_installed; then

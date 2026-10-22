@@ -10,12 +10,15 @@
 #
 # Functions:
 #   - info / warn / error        : Colored log output
+#   - debug                      : Log output shown only when VERBOSE=1
 #   - validate_version           : Validate semantic version format (X.Y.Z)
 #   - is_quarto_installed        : Check if Quarto is installed
 #   - get_current_version        : Get the currently installed Quarto version
 #   - get_deb_url / get_deb_filename : Build .deb package URL / filename
 #   - fetch_latest_version       : Fetch the latest version from GitHub API
-#   - download_deb               : Download a .deb package
+#   - make_download_dir          : Create a temporary download directory
+#   - cleanup_download_dir       : Remove a temporary download directory
+#   - download_deb               : Download a .deb package into a directory
 #   - confirm_action             : Prompt user for yes/no confirmation
 #   - prompt_version             : Prompt user for version input
 #   - check_dependencies         : Verify required commands (curl, sudo, gdebi)
@@ -62,6 +65,13 @@ warn() {
 
 error() {
     echo -e "${RED}[ERROR]${RESET} $*" >&2
+}
+
+# Log to stderr only when VERBOSE=1 (set by --verbose)
+debug() {
+    if [[ "${VERBOSE:-0}" == "1" ]]; then
+        echo -e "${BLUE}[DEBUG]${RESET} $*" >&2
+    fi
 }
 
 # ──────────────────────────────────────────────
@@ -118,22 +128,45 @@ fetch_latest_version() {
     echo "$version"
 }
 
-# Download .deb file; returns path to downloaded file
+# Create a private temporary directory for downloads; prints its path
+make_download_dir() {
+    local dir
+    if ! dir=$(mktemp -d "${TMPDIR:-/tmp}/quarto-manager.XXXXXX"); then
+        error "Failed to create a temporary directory."
+        return 1
+    fi
+    debug "Created temporary directory: ${dir}"
+    echo "$dir"
+}
+
+# Remove a temporary download directory (safe to call more than once)
+cleanup_download_dir() {
+    local dir="$1"
+    if [[ -n "$dir" && -d "$dir" ]]; then
+        rm -rf "$dir"
+        debug "Removed temporary directory: ${dir}"
+    fi
+}
+
+# Download .deb file into DEST_DIR; returns path to downloaded file
 download_deb() {
     local version="$1"
+    local dest_dir="$2"
     local url
-    local filename
+    local deb_path
     url=$(get_deb_url "$version")
-    filename=$(get_deb_filename "$version")
+    deb_path="${dest_dir}/$(get_deb_filename "$version")"
 
     # Log to stderr: stdout is captured by the caller as the file path
     info "Downloading Quarto v${version}..." >&2
-    if ! curl -fSL -o "$filename" "$url"; then
+    debug "URL: ${url}"
+    debug "Destination: ${deb_path}"
+    if ! curl -fSL -o "$deb_path" "$url"; then
         error "Download failed. Check the version number and your network connection."
-        rm -f "$filename"
+        rm -f "$deb_path"
         return 1
     fi
-    echo "$filename"
+    echo "$deb_path"
 }
 
 # ──────────────────────────────────────────────

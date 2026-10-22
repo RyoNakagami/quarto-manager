@@ -50,6 +50,27 @@ setup() {
 }
 
 # ──────────────────────────────────────────────
+# --verbose global option
+# ──────────────────────────────────────────────
+@test "--verbose before command is accepted" {
+    run "$QUARTO_MANAGER" --verbose help
+    assert_success
+    assert_output --partial "USAGE"
+}
+
+@test "--verbose after command is accepted" {
+    run "$QUARTO_MANAGER" help --verbose
+    assert_success
+    assert_output --partial "USAGE"
+}
+
+@test "--verbose alone shows usage" {
+    run "$QUARTO_MANAGER" --verbose
+    assert_success
+    assert_output --partial "USAGE"
+}
+
+# ──────────────────────────────────────────────
 # unknown command
 # ──────────────────────────────────────────────
 @test "unknown command fails with error" {

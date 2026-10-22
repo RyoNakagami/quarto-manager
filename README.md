@@ -66,6 +66,19 @@ quarto-manager check
 quarto-manager remove
 ```
 
+### Verbose Output
+
+`.deb` packages are downloaded into a temporary directory created with `mktemp -d`
+(under `$TMPDIR`, default `/tmp`) and removed after installation, so nothing is
+left in the current directory. Add `--verbose` (anywhere on the command line) to
+see where the package is downloaded:
+
+```bash
+quarto-manager install --verbose 1.7.32
+# [DEBUG] Created temporary directory: /tmp/quarto-manager.Ab12Cd
+# [DEBUG] Destination: /tmp/quarto-manager.Ab12Cd/quarto-1.7.32-linux-amd64.deb
+```
+
 ### Help
 
 ```bash

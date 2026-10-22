@@ -16,6 +16,10 @@
 #   quarto-manager help                Show this help message
 #   quarto-manager --version           Show version number
 #
+# Options:
+#   --verbose   Show debug logs (e.g. temporary download location).
+#               Accepted anywhere on the command line.
+#
 # Dependencies:
 #   - curl, sudo, gdebi-core (for install/update operations)
 #   - Linux (Debian/Ubuntu) with dpkg
@@ -45,6 +49,9 @@ source "${LIB_DIR}/remove.sh"
 # ──────────────────────────────────────────────
 readonly VERSION="0.1.0"
 
+# Set to 1 by --verbose; read by debug() in utils.sh
+VERBOSE=0
+
 # ──────────────────────────────────────────────
 # Help
 # ──────────────────────────────────────────────
@@ -62,8 +69,12 @@ ${BOLD}COMMANDS:${RESET}
     remove              Remove Quarto
     help                Show this help message
 
+${BOLD}OPTIONS:${RESET}
+    --verbose           Show debug logs (e.g. temporary download location)
+
 ${BOLD}EXAMPLES:${RESET}
     quarto-manager install 1.7.32
+    quarto-manager install --verbose 1.7.32
     quarto-manager update
     quarto-manager check
     quarto-manager remove
@@ -74,6 +85,17 @@ EOF
 # Main
 # ──────────────────────────────────────────────
 main() {
+    # Extract global options so they can appear anywhere on the command line
+    local args=()
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --verbose) VERBOSE=1 ;;
+            *) args+=("$arg") ;;
+        esac
+    done
+    set -- "${args[@]+"${args[@]}"}"
+
     local command="${1:-help}"
     shift || true
 

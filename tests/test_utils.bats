@@ -71,10 +71,69 @@ setup() {
 # ──────────────────────────────────────────────
 @test "download_deb prints only the file path to stdout" {
     curl() { :; }
-    cd "$BATS_TEST_TMPDIR"
     local deb_file
-    deb_file=$(download_deb "1.7.32" 2>/dev/null)
-    [ "$deb_file" = "quarto-1.7.32-linux-amd64.deb" ]
+    deb_file=$(download_deb "1.7.32" "$BATS_TEST_TMPDIR" 2>/dev/null)
+    [ "$deb_file" = "${BATS_TEST_TMPDIR}/quarto-1.7.32-linux-amd64.deb" ]
+}
+
+@test "download_deb does not write to the current directory" {
+    curl() { touch "$3"; }
+    local dest_dir="${BATS_TEST_TMPDIR}/dest"
+    local work_dir="${BATS_TEST_TMPDIR}/work"
+    mkdir -p "$dest_dir" "$work_dir"
+    cd "$work_dir"
+    download_deb "1.7.32" "$dest_dir" >/dev/null 2>&1
+    [ -f "${dest_dir}/quarto-1.7.32-linux-amd64.deb" ]
+    [ -z "$(ls -A "$work_dir")" ]
+}
+
+# ──────────────────────────────────────────────
+# make_download_dir / cleanup_download_dir
+# ──────────────────────────────────────────────
+@test "make_download_dir creates a directory under TMPDIR" {
+    local dir
+    dir=$(TMPDIR="$BATS_TEST_TMPDIR" make_download_dir)
+    [ -d "$dir" ]
+    [[ "$dir" == "${BATS_TEST_TMPDIR}/quarto-manager."* ]]
+}
+
+@test "cleanup_download_dir removes the directory and its contents" {
+    local dir
+    dir=$(TMPDIR="$BATS_TEST_TMPDIR" make_download_dir)
+    touch "${dir}/quarto.deb"
+    cleanup_download_dir "$dir"
+    [ ! -e "$dir" ]
+}
+
+@test "cleanup_download_dir is a no-op for a missing directory" {
+    run cleanup_download_dir "${BATS_TEST_TMPDIR}/does-not-exist"
+    assert_success
+}
+
+# ──────────────────────────────────────────────
+# debug
+# ──────────────────────────────────────────────
+@test "debug prints nothing when VERBOSE is unset" {
+    unset VERBOSE
+    run debug "hello"
+    assert_success
+    assert_output ""
+}
+
+@test "debug prints message when VERBOSE=1" {
+    VERBOSE=1
+    run debug "hello"
+    assert_success
+    assert_output --partial "[DEBUG]"
+    assert_output --partial "hello"
+}
+
+@test "download_deb reports destination in verbose mode" {
+    curl() { :; }
+    VERBOSE=1
+    run download_deb "1.7.32" "$BATS_TEST_TMPDIR"
+    assert_success
+    assert_output --partial "Destination: ${BATS_TEST_TMPDIR}/quarto-1.7.32-linux-amd64.deb"
 }
 
 # ──────────────────────────────────────────────

@@ -5,8 +5,9 @@
 #
 # Description:
 #   Update an existing Quarto installation to a new version. Removes the
-#   current version via dpkg -r, then downloads and installs the target
-#   version's .deb package with gdebi.
+#   current version via dpkg -r, then downloads the target version's .deb
+#   package into a temporary directory (mktemp) and installs it with gdebi.
+#   The temporary directory is always removed.
 #
 # Functions:
 #   - update_quarto <VERSION>    : Update to the specified version (internal)
@@ -50,8 +51,14 @@ update_quarto() {
         return 0
     fi
 
+    local tmp_dir
+    tmp_dir=$(make_download_dir) || return 1
+    # Safety net: remove the temp dir even on interrupt or unexpected exit
+    # shellcheck disable=SC2064
+    trap "cleanup_download_dir $(printf '%q' "$tmp_dir")" EXIT
+
     local deb_file
-    deb_file=$(download_deb "$version") || return 1
+    deb_file=$(download_deb "$version" "$tmp_dir") || return 1
 
     info "Removing existing Quarto installation..."
     if ! sudo dpkg -r quarto; then
@@ -61,11 +68,11 @@ update_quarto() {
     info "Installing Quarto v${version}..."
     if ! sudo gdebi --non-interactive "$deb_file"; then
         error "Installation failed."
-        rm -f "$deb_file"
+        cleanup_download_dir "$tmp_dir"
         return 1
     fi
 
-    rm -f "$deb_file"
+    cleanup_download_dir "$tmp_dir"
     info "Temporary files cleaned up."
 
     if is_quarto_installed; then
